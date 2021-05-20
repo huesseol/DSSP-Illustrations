@@ -1,9 +1,10 @@
 import ipywidgets as widgets
 import numpy as np
+import matplotlib.pyplot as plt
 
 #size of window for signals
 nG = np.arange(-20, 20)
-
+nG3 = np.arange(-60, 60)
 #several example signals
 
 def unit_step_continuous(a, t):
@@ -68,12 +69,20 @@ def sinus_squared_continuous(a, t):
 def sinus_squared(a, n):
     sin = []
     for sample in n:
-        sinus_squared(a, sample)
+        sin.append(sinus_squared_continuous(a, sample))
     return sin
+
+# n is a range type object describing the relevant domain
+def causal_arbitrary(n):
+    neg_len = len(n)//2
+    
+    sig = list(map(float, arbitrary_causal_signalG.split()))
+    sig = [0]*neg_len + sig + [0]*(len(n) - neg_len - len(sig))
+    return sig
 
 signalG = "unit step"
 aG = 1
-
+arbitrary_causal_signalG = '1 2 1 -2 2'
 #original signal in time domain
 def time_domain_signal():
   sig = None
@@ -89,6 +98,27 @@ def time_domain_signal():
     sig = sinus(aG, nG)
   elif signalG == "sinus squared":
     sig = sinus_squared(aG, nG)
+  elif signalG == "causal arbitrary":
+    sig = causal_arbitrary(nG)
+  return sig
+  
+#original signal in time domain (thrice the size)
+def time_domain_signal_long():
+  sig = None
+  if signalG == "unit step":
+    sig = unit_step(aG, nG3)
+  elif signalG == "unit impulse":
+    sig = unit_impulse(aG, nG3)
+  elif signalG == "ramp":
+    sig = ramp(aG, nG3)
+  elif signalG == "exponential":
+    sig = exponential(aG, nG3)
+  elif signalG == "sinus":
+    sig = sinus(aG, nG3)
+  elif signalG == "sinus squared":
+    sig = sinus_squared(aG, nG3)
+  elif signalG == "causal arbitrary":
+    sig = causal_arbitrary(nG3)
   return sig
   
 #original signal in time domain, returns function handler
@@ -106,16 +136,54 @@ def time_domain_signal_continuous():
     sig = lambda t: sinus_continuous(aG, t)
   elif signalG == "sinus squared":
     sig = lambda t: sinus_squared_continuous(aG, t)
+  elif signalG == "causal arbitrary":
+    sig = lambda t: 0 #returns 0 since not continuous
   return sig
 
-def update_signal_parameters(signal, a):
-  global signalG, aG
-  signalG, aG = signal, a
+def update_signal_parameters(signal, a, arbitrary_causal_signal):
+  global signalG, aG, arbitrary_causal_signalG
+  signalG, aG, arbitrary_causal_signalG = signal, a, arbitrary_causal_signal
+
+#plot functional form
+def display_signal_selection(continuous):
+  plt.figure(figsize=(8, 0.4), dpi=80)
+  if continuous:
+      if signalG == "unit step":
+        plt.text(0.0, 0.0,'$u(t) = \sigma(t-parameter)$', fontsize=22)
+      elif signalG == "unit impulse":
+        plt.text(0.0, 0.0,'$u(t) = \delta(t-parameter)$', fontsize=22)
+      elif signalG == "ramp":
+        plt.text(0.0, 0.0,'$u(t) = (t-parameter)/4 \cdot \sigma(t-parameter)$', fontsize=22)
+      elif signalG == "exponential":
+        plt.text(0.0, 0.0,'$u(t) = \exp (t \cdot parameter/20)$', fontsize=22)
+      elif signalG == "sinus":
+        plt.text(0.0, 0.0,'$u(t) = \sin (t \cdot parameter/10)$', fontsize=22)
+      elif signalG == "sinus squared":
+        plt.text(0.0, 0.0,'$u(t) = \sin^2 (t \cdot parameter/10)$', fontsize=22)
+      elif signalG == 'causal arbitrary':
+          pass #only discrete time signal
+  else:
+      if signalG == "unit step":
+        plt.text(0.0, 0.0,'$u[k] = \sigma[k-parameter]$', fontsize=22)
+      elif signalG == "unit impulse":
+        plt.text(0.0, 0.0,'$u[k] = \delta[k-parameter]$', fontsize=22)
+      elif signalG == "ramp":
+        plt.text(0.0, 0.0,'$u[k] = (k-parameter)/4 \cdot \sigma[k-parameter]$', fontsize=22)
+      elif signalG == "exponential":
+        plt.text(0.0, 0.0,'$u[k] = \exp (k \cdot parameter/20))$', fontsize=22)
+      elif signalG == "sinus":
+        plt.text(0.0, 0.0,'$u[k] = \sin (k \cdot parameter/10)$', fontsize=22)
+      elif signalG == "sinus squared":
+        plt.text(0.0, 0.0,'$u[k] = \sin^2 (k \cdot parameter/10)$', fontsize=22)
+      elif signalG == 'causal arbitrary':
+        plt.text(0.0, 0.0,'taps = ' + arbitrary_causal_signalG, fontsize=22)
+  plt.axis('off')
+  plt.show()
 
 def widget():
     widgets.interact(update_signal_parameters, 
       signal = widgets.Dropdown(
-        options=['unit step', 'unit impulse', 'ramp', 'exponential', 'sinus', 'sinus squared'],
+        options=['unit step', 'unit impulse', 'ramp', 'exponential', 'sinus', 'sinus squared', 'causal arbitrary'],
         value='unit step',
         description='signal type'),
       a = widgets.IntSlider(
@@ -123,5 +191,8 @@ def widget():
         min=-10,
         max=10,
         step=1,
-        description='parameter')
+        description='parameter'),
+    arbitrary_causal_signal = widgets.Text(
+        value='1 2 1 -2 2',
+        description='causal signal')
     )
